@@ -1,26 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "/Users/macle/Desktop/Proyecto_de_ventas/ventaapp/ventaapp.csproj": {}
+    "/workspaces/app-de-ventas/ventaapp/ventaapp.csproj": {}
   },
   "projects": {
-    "/Users/macle/Desktop/Proyecto_de_ventas/ventaapp/ventaapp.csproj": {
+    "/workspaces/app-de-ventas/ventaapp/ventaapp.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/macle/Desktop/Proyecto_de_ventas/ventaapp/ventaapp.csproj",
+        "projectUniqueName": "/workspaces/app-de-ventas/ventaapp/ventaapp.csproj",
         "projectName": "ventaapp",
-        "projectPath": "/Users/macle/Desktop/Proyecto_de_ventas/ventaapp/ventaapp.csproj",
-        "packagesPath": "/Users/macle/.nuget/packages/",
-        "outputPath": "/Users/macle/Desktop/Proyecto_de_ventas/ventaapp/obj/",
+        "projectPath": "/workspaces/app-de-ventas/ventaapp/ventaapp.csproj",
+        "packagesPath": "/home/codespace/.nuget/packages/",
+        "outputPath": "/workspaces/app-de-ventas/ventaapp/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/Users/macle/.nuget/NuGet/NuGet.Config"
+          "/home/codespace/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
         ],
         "sources": {
-          "/usr/local/share/dotnet/library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -49,6 +48,10 @@
               "target": "Package",
               "version": "[4.0.3, )"
             },
+            "EPPlus": {
+              "target": "Package",
+              "version": "[6.4.4, )"
+            },
             "Microsoft.AspNetCore.Authentication.Cookies": {
               "target": "Package",
               "version": "[2.3.9, )"
@@ -62,6 +65,10 @@
               "version": "[9.0.0, )"
             },
             "Microsoft.EntityFrameworkCore.SqlServer": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "Microsoft.EntityFrameworkCore.Sqlite": {
               "target": "Package",
               "version": "[9.0.0, )"
             },
@@ -90,15 +97,15 @@
           "downloadDependencies": [
             {
               "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[9.0.13, 9.0.13]"
+              "version": "[9.0.11, 9.0.11]"
             },
             {
-              "name": "Microsoft.NETCore.App.Host.osx-x64",
-              "version": "[9.0.13, 9.0.13]"
+              "name": "Microsoft.NETCore.App.Host.linux-x64",
+              "version": "[9.0.11, 9.0.11]"
             },
             {
               "name": "Microsoft.NETCore.App.Ref",
-              "version": "[9.0.13, 9.0.13]"
+              "version": "[9.0.11, 9.0.11]"
             }
           ],
           "frameworkReferences": {
@@ -109,7 +116,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.103/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

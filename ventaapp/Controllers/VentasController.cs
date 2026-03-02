@@ -6,6 +6,7 @@ using System.Text.Json;
 
 namespace ventaapp.Controllers
 {
+    [Microsoft.AspNetCore.Authorization.Authorize]
     public class VentasController : Controller
     {
         private readonly VentasDbContext _context;
@@ -31,10 +32,10 @@ namespace ventaapp.Controllers
 
             // Filtros
             if (fechaDesde.HasValue)
-                ventas = ventas.Where(v => v.Fechaventa.Date >= fechaDesde.Value.Date);
+                ventas = ventas.Where(v => v.FechaVenta.Date >= fechaDesde.Value.Date);
 
             if (fechaHasta.HasValue)
-                ventas = ventas.Where(v => v.Fechaventa.Date <= fechaHasta.Value.Date);
+                ventas = ventas.Where(v => v.FechaVenta.Date <= fechaHasta.Value.Date);
 
             if (idCliente.HasValue)
                 ventas = ventas.Where(v => v.IdCliente == idCliente.Value);
@@ -45,27 +46,27 @@ namespace ventaapp.Controllers
             if (!string.IsNullOrEmpty(estado))
                 ventas = ventas.Where(v => v.Estado == estado);
 
-            var ventasList = await ventas.OrderByDescending(v => v.Fechaventa).ToListAsync();
+            var ventasList = await ventas.OrderByDescending(v => v.FechaVenta).ToListAsync();
 
             // Estadísticas
             var hoy = DateTime.Today;
             ViewBag.VentasHoy = await _context.Ventas
-                .Where(v => v.Fechaventa.Date == hoy && v.Estado == "Completada")
+                .Where(v => v.FechaVenta.Date == hoy && v.Estado == "Completada")
                 .CountAsync();
             
             ViewBag.TotalHoy = await _context.Ventas
-                .Where(v => v.Fechaventa.Date == hoy && v.Estado == "Completada")
+                .Where(v => v.FechaVenta.Date == hoy && v.Estado == "Completada")
                 .SumAsync(v => (decimal?)v.Total) ?? 0;
 
             ViewBag.VentasMes = await _context.Ventas
-                .Where(v => v.Fechaventa.Month == hoy.Month && 
-                           v.Fechaventa.Year == hoy.Year && 
+                .Where(v => v.FechaVenta.Month == hoy.Month && 
+                           v.FechaVenta.Year == hoy.Year && 
                            v.Estado == "Completada")
                 .CountAsync();
 
             ViewBag.TotalMes = await _context.Ventas
-                .Where(v => v.Fechaventa.Month == hoy.Month && 
-                           v.Fechaventa.Year == hoy.Year && 
+                .Where(v => v.FechaVenta.Month == hoy.Month && 
+                           v.FechaVenta.Year == hoy.Year && 
                            v.Estado == "Completada")
                 .SumAsync(v => (decimal?)v.Total) ?? 0;
 
@@ -122,7 +123,7 @@ namespace ventaapp.Controllers
                 // Crear la venta
                 var nuevaVenta = new Venta
                 {
-                    Fechaventa = DateTime.Now,
+                    FechaVenta = DateTime.Now,
                     IdCliente = venta.IdCliente,
                     Subtotal = subtotal,
                     Itbis = itbis,
@@ -141,25 +142,48 @@ namespace ventaapp.Controllers
                 _context.Ventas.Add(nuevaVenta);
                 await _context.SaveChangesAsync();
 
-                // Crear las facturas (una por cada producto)
+                // Validar y descontar stock antes de crear facturas
                 foreach (var item in carrito)
                 {
-                    var factura = new Factura
+                    var productoDb = await _context.Productos.FindAsync(item.IdProducto);
+                    if (productoDb == null)
                     {
-                        IdVenta = nuevaVenta.IdVenta,
-                        IdCliente = venta.IdCliente,
-                        IdProducto = item.IdProducto,
-                        NumeroFactura = $"F-{nuevaVenta.IdVenta:D6}-{item.IdProducto:D4}",
-                        FechaEmision = DateTime.Now,
-                        RncEmpresa = "000-00000-0", // Configurar según tu empresa
-                        NombreEmpresa = "VentaApp", // Configurar según tu empresa
-                        DireccionEmpresa = "Santo Domingo, RD", // Configurar según tu empresa
-                        Ncf = GenerarNCF(),
-                        TipoComprobanteFiscal = venta.TipoComprobante,
-                        Estado = "Activa"
-                    };
+                        TempData["Error"] = $"El producto {item.NombreProducto} no existe.";
+                        return RedirectToAction(nameof(PuntoVenta));
+                    }
+                    if (productoDb.Stock < item.Cantidad)
+                    {
+                        TempData["Error"] = $"Stock insuficiente para {productoDb.NombreProducto}. Disponible: {productoDb.Stock}, solicitado: {item.Cantidad}.";
+                        return RedirectToAction(nameof(PuntoVenta));
+                    }
 
-                    _context.Facturas.Add(factura);
+                    productoDb.Stock -= item.Cantidad;
+                    _context.Productos.Update(productoDb);
+                }
+
+                // Crear las facturas (una por cada unidad vendida).
+                // Esto facilita el manejo de stock y anulaciones.
+                foreach (var item in carrito)
+                {
+                    for (int i = 0; i < item.Cantidad; i++)
+                    {
+                        var factura = new Factura
+                        {
+                            IdVenta = nuevaVenta.IdVenta,
+                            IdCliente = venta.IdCliente,
+                            IdProducto = item.IdProducto,
+                            NumeroFactura = $"F-{nuevaVenta.IdVenta:D6}-{item.IdProducto:D4}-{i + 1}",
+                            FechaEmision = DateTime.Now,
+                            RncEmpresa = "000-00000-0", // Configurar según tu empresa
+                            NombreEmpresa = "VentaApp", // Configurar según tu empresa
+                            DireccionEmpresa = "Santo Domingo, RD", // Configurar según tu empresa
+                            Ncf = GenerarNCF(),
+                            TipoComprobanteFiscal = venta.TipoComprobante,
+                            Estado = "Activa"
+                        };
+
+                        _context.Facturas.Add(factura);
+                    }
                 }
 
                 await _context.SaveChangesAsync();
@@ -213,11 +237,18 @@ namespace ventaapp.Controllers
                 venta.Estado = "Anulada";
                 venta.Notas += $" | ANULADA: {motivoAnulacion} - {DateTime.Now:dd/MM/yyyy HH:mm}";
 
-                // Anular facturas asociadas
+                // Anular facturas asociadas y devolver stock
                 var facturas = await _context.Facturas.Where(f => f.IdVenta == id).ToListAsync();
                 foreach (var factura in facturas)
                 {
                     factura.Estado = "Anulada";
+                    // devolver al stock el producto vendido
+                    var prod = await _context.Productos.FindAsync(factura.IdProducto);
+                    if (prod != null)
+                    {
+                        prod.Stock += 1; // cada factura representa una unidad
+                        _context.Productos.Update(prod);
+                    }
                 }
 
                 await _context.SaveChangesAsync();
@@ -256,10 +287,10 @@ namespace ventaapp.Controllers
 
             var ventas = await _context.Ventas
                 .Include(v => v.Cliente)
-                .Where(v => v.Fechaventa >= fechaInicio && 
-                           v.Fechaventa <= fechaFin && 
+                .Where(v => v.FechaVenta >= fechaInicio && 
+                           v.FechaVenta <= fechaFin && 
                            v.Estado == "Completada")
-                .OrderByDescending(v => v.Fechaventa)
+                .OrderByDescending(v => v.FechaVenta)
                 .ToListAsync();
 
             // Estadísticas
@@ -298,8 +329,8 @@ namespace ventaapp.Controllers
             
             var ventas = await _context.Ventas
                 .Include(v => v.Cliente)
-                .Where(v => v.Fechaventa.Date == fechaCierre.Date && v.Estado == "Completada")
-                .OrderBy(v => v.Fechaventa)
+                .Where(v => v.FechaVenta.Date == fechaCierre.Date && v.Estado == "Completada")
+                .OrderBy(v => v.FechaVenta)
                 .ToListAsync();
 
             ViewBag.FechaCierre = fechaCierre;
@@ -343,7 +374,8 @@ namespace ventaapp.Controllers
                     p.CodigoProducto,
                     p.NombreProducto,
                     p.PrecioVenta,
-                    p.Impuesto
+                    p.Impuesto,
+                    p.Stock
                 })
                 .ToListAsync();
 

@@ -270,9 +270,13 @@ El sistema viene preconfigurado con:
 
 ### Funcionalidades Adicionales:
 1. **Control de Stock/Inventario:**
-   - Agregar campo de cantidad disponible
+   - Agregar campo de cantidad disponible (`stock`)
    - Alertas de bajo stock
    - Historial de movimientos
+
+   ```sql
+   ALTER TABLE productos_tb ADD COLUMN stock INT NOT NULL DEFAULT 0;
+   ```
 
 2. **Códigos de Barras:**
    - Generación automática

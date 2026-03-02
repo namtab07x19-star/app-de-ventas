@@ -505,6 +505,7 @@ CREATE TABLE `productos_tb` (
   `precio_compra` decimal(10,2) NOT NULL,
   `precio_venta` decimal(10,2) NOT NULL,
   `impuesto` decimal(5,2) DEFAULT NULL,
+  `stock` int(11) NOT NULL DEFAULT 0,
   `estado` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -512,8 +513,8 @@ CREATE TABLE `productos_tb` (
 -- Volcado de datos para la tabla `productos_tb`
 --
 
-INSERT INTO `productos_tb` (`id_producto`, `codigo_producto`, `nombre_producto`, `descripcion`, `categoria`, `precio_compra`, `precio_venta`, `impuesto`, `estado`) VALUES
-(1, 'PROD-01', 'MacBook Pro', 'Macbook Pro 2017 Usada', 'Electrónica', 20000.00, 40000.00, 18.00, 'Activo');
+INSERT INTO `productos_tb` (`id_producto`, `codigo_producto`, `nombre_producto`, `descripcion`, `categoria`, `precio_compra`, `precio_venta`, `impuesto`, `stock`, `estado`) VALUES
+(1, 'PROD-01', 'MacBook Pro', 'Macbook Pro 2017 Usada', 'Electrónica', 20000.00, 40000.00, 18.00, 5, 'Activo');
 
 -- --------------------------------------------------------
 
